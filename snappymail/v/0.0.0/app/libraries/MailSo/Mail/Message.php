@@ -245,12 +245,6 @@ class Message implements \JsonSerializable
 					}
 				}
 				$oMessage->bIsSpam = false !== \stripos($oMessage->sSubject, '*** SPAM ***');
-			} else if ($spam = $oHeaders->ValueByName(MimeHeader::X_BOGOSITY)) {
-				$oMessage->sSpamResult = $spam;
-				$oMessage->bIsSpam = !\str_contains($spam, 'Ham');
-				if (\preg_match('/spamicity=([\\d\\.]+)/', $spam, $spamicity)) {
-					$oMessage->setSpamScore(100 * \floatval($spamicity[1]));
-				}
 			} else if ($spam = $oHeaders->ValueByName(MimeHeader::X_SPAM_STATUS)) {
 				$oMessage->sSpamResult = $spam;
 				if (\preg_match('/(?:hits|score)=([\\d\\.-]+)/', $spam, $value)
@@ -270,6 +264,14 @@ class Message implements \JsonSerializable
 
 				$oMessage->bIsSpam = 'Yes' === \substr($spam, 0, 3)
 					|| false !== \stripos($oHeaders->ValueByName(MimeHeader::X_SPAM_FLAG), 'YES');
+			} else if ($spam = $oHeaders->ValueByName(MimeHeader::X_BOGOSITY)) {
+				$oMessage->sSpamResult = $spam;
+				$oMessage->bIsSpam = \str_starts_with($spam, 'S') || \str_starts_with($spam, 'Y');
+				if (\preg_match('/spamicity=([\\d\\.]+)/', $spam, $spamicity)) {
+					$oMessage->setSpamScore(100 * \floatval($spamicity[1]));
+				} else if (\preg_match('/[HNSUY] ([\\d\\.]+)/', $spam, $spamicity)) {
+					$oMessage->setSpamScore(100 * \floatval($spamicity[1]));
+				}
 			}
 
 			if ($virus = $oHeaders->ValueByName(MimeHeader::X_VIRUS)) {
